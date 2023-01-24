@@ -17,6 +17,7 @@ import (
 
 type memoryEngine struct {
 	*memoryIssuerService
+	*memoryUserInfoService
 	crdb testserver.TestServer
 }
 

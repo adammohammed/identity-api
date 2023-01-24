@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 
+	"go.infratographer.com/identity-manager-sts/internal/types"
 	v1 "go.infratographer.com/identity-manager-sts/pkg/api/v1"
 )
 
@@ -17,6 +18,7 @@ type EngineType string
 // Engine represents a storage engine.
 type Engine interface {
 	v1.IssuerService
+	types.UserInfoService
 	Shutdown()
 }
 
@@ -43,9 +45,15 @@ func NewEngine(config Config) (Engine, error) {
 			return nil, err
 		}
 
+		userInfoSvc, err := newUserInfoService(config)
+		if err != nil {
+			return nil, err
+		}
+
 		out := &memoryEngine{
-			memoryIssuerService: issSvc,
-			crdb:                crdb,
+			memoryIssuerService:   issSvc,
+			memoryUserInfoService: userInfoSvc,
+			crdb:                  crdb,
 		}
 
 		return out, nil

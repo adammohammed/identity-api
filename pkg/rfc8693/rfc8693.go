@@ -201,6 +201,20 @@ func (s *TokenExchangeHandler) HandleTokenEndpointRequest(ctx context.Context, r
 		return errorsx.WithStack(fosite.ErrInvalidRequest.WithHintf("error mapping claims: %s", err))
 	}
 
+	issuer := claims.Issuer
+
+	userInfoSvc := s.config.GetUserInfoStrategy(ctx)
+
+	userInfo, err := userInfoSvc.FetchUserInfoFromIssuer(ctx, issuer, subjectToken)
+	if err != nil {
+		return err
+	}
+
+	err = userInfoSvc.StoreUserInfo(ctx, *userInfo)
+	if err != nil {
+		return err
+	}
+
 	var newClaims jwt.JWTClaims
 	newClaims.Subject = claims.Subject
 	newClaims.Issuer = s.config.GetAccessTokenIssuer(ctx)
