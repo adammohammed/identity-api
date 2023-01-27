@@ -8,6 +8,9 @@ import (
 
 // UserInfo stores information about the user based on issuer/subject
 // pairs.
+// As defined in https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+// For now we're only providing "name" and "email" in addition to the
+// required "sub" claim.
 type UserInfo struct {
 	Name    string `json:"name"`
 	Email   string `json:"email"`
