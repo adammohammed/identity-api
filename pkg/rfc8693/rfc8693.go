@@ -280,7 +280,7 @@ func (s *TokenExchangeHandler) populateUserInfo(ctx context.Context, issuer stri
 
 	if err != nil {
 		if !errors.Is(err, types.ErrUserInfoNotFound) {
-			return nil, errorsx.WithStack(fosite.ErrInvalidRequest.WithHintf("unable to lookup userinfo: %s", err))
+			return nil, err
 		}
 	} else {
 		return userInfo, nil
