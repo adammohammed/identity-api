@@ -11,6 +11,7 @@ import (
 	"github.com/ory/fosite/token/jwt"
 	"github.com/ory/x/errorsx"
 
+	"go.infratographer.com/identity-manager-sts/internal/types"
 	"go.infratographer.com/identity-manager-sts/pkg/fositex"
 )
 
@@ -203,16 +204,16 @@ func (s *TokenExchangeHandler) HandleTokenEndpointRequest(ctx context.Context, r
 
 	issuer := claims.Issuer
 
-	userInfoSvc := s.config.GetUserInfoStrategy(ctx)
-
-	userInfo, err := userInfoSvc.FetchUserInfoFromIssuer(ctx, issuer, subjectToken)
+	userInfo, err := s.populateUserInfo(ctx, issuer, claims.Subject, subjectToken)
 	if err != nil {
-		return err
+		return errorsx.WithStack(fosite.ErrInvalidRequest.WithHintf("unable to populate user info: %s", err))
 	}
+
+	userInfoSvc := s.config.GetUserInfoStrategy(ctx)
 
 	err = userInfoSvc.StoreUserInfo(ctx, *userInfo)
 	if err != nil {
-		return err
+		return errorsx.WithStack(fosite.ErrInvalidRequest.WithHintf("unable to store user info: %s", err))
 	}
 
 	var newClaims jwt.JWTClaims
@@ -271,4 +272,24 @@ func (s *TokenExchangeHandler) CanSkipClientAuth(ctx context.Context, requester 
 // CanHandleTokenEndpointRequest returns true if the grant type is token exchange.
 func (s *TokenExchangeHandler) CanHandleTokenEndpointRequest(ctx context.Context, requester fosite.AccessRequester) bool {
 	return requester.GetGrantTypes().ExactOne(GrantTypeTokenExchange)
+}
+
+func (s *TokenExchangeHandler) populateUserInfo(ctx context.Context, issuer string, subject string, token string) (*types.UserInfo, error) {
+	userInfoSvc := s.config.GetUserInfoStrategy(ctx)
+	userInfo, err := userInfoSvc.LookupUserInfoByClaims(ctx, issuer, subject)
+
+	if err != nil {
+		if !errors.Is(err, types.ErrUserInfoNotFound) {
+			return nil, errorsx.WithStack(fosite.ErrInvalidRequest.WithHintf("unable to lookup userinfo: %s", err))
+		}
+	} else {
+		return userInfo, nil
+	}
+
+	userInfo, err = userInfoSvc.FetchUserInfoFromIssuer(ctx, issuer, token)
+	if err != nil {
+		return nil, err
+	}
+
+	return userInfo, nil
 }
