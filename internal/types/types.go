@@ -26,8 +26,8 @@ var ErrFetchUserInfo = errors.New("could not fetch user info")
 // UserInfoService defines the storage class for storing User
 // information related to the subject tokens.
 type UserInfoService interface {
-	// LookupByClaims returns the User information object for a issuer, subject pair.
-	LookupByClaims(ctx context.Context, iss, sub string) (*UserInfo, error)
+	// LookupUserInfoByClaims returns the User information object for a issuer, subject pair.
+	LookupUserInfoByClaims(ctx context.Context, iss, sub string) (*UserInfo, error)
 
 	// StoreUserInfo stores the userInfo into the storage backend.
 	StoreUserInfo(ctx context.Context, userInfo UserInfo) error

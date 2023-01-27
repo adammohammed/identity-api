@@ -145,12 +145,12 @@ func TestUserInfoStore(t *testing.T) {
 		"LoadUserAfterStore": func(t *testing.T) {
 			err := svc.StoreUserInfo(ctx, user)
 			assert.NoError(t, err)
-			out, err := svc.LookupByClaims(ctx, user.Issuer, user.Subject)
+			out, err := svc.LookupUserInfoByClaims(ctx, user.Issuer, user.Subject)
 			assert.NoError(t, err)
 			assert.Equal(t, user, *out)
 		},
 		"LoadUserFails": func(t *testing.T) {
-			_, err := svc.LookupByClaims(ctx, "", user.Subject)
+			_, err := svc.LookupUserInfoByClaims(ctx, "", user.Subject)
 			assert.ErrorIs(t, err, types.ErrUserInfoNotFound)
 		},
 		"FetchUserInfoFromIssuer": func(t *testing.T) {

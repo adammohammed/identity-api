@@ -201,11 +201,11 @@ func (s *memoryUserInfoService) createTables() error {
 	return err
 }
 
-// LookupByClaims fetches UserInfo from the store.
+// LookupUserInfoByClaims fetches UserInfo from the store.
 // This does not make an HTTP call with the subject token, so for this
 // data to be available, the data must have already be fetched and
 // stored.
-func (s memoryUserInfoService) LookupByClaims(ctx context.Context, iss, sub string) (*types.UserInfo, error) {
+func (s memoryUserInfoService) LookupUserInfoByClaims(ctx context.Context, iss, sub string) (*types.UserInfo, error) {
 	row := s.db.QueryRowContext(ctx, `
         SELECT ui.name, ui.email, ui.sub, i.uri FROM user_info ui
         JOIN issuers i ON
