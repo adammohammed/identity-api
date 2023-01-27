@@ -279,6 +279,9 @@ func (s *TokenExchangeHandler) populateUserInfo(ctx context.Context, issuer stri
 	userInfo, err := userInfoSvc.LookupUserInfoByClaims(ctx, issuer, subject)
 
 	if err != nil {
+		// We can handle ErrUserInfoNotFound by hitting the
+		// issuers userinfo endpoint, but if some other error
+		// came back bail.
 		if !errors.Is(err, types.ErrUserInfoNotFound) {
 			return nil, err
 		}
