@@ -88,6 +88,7 @@ type OAuth2Configurator interface {
 	SigningJWKSProvider
 	ClaimMappingStrategyProvider
 	UserInfoStrategyProvider
+	GetFositeConfig() *fosite.Config
 }
 
 // OAuth2Config represents a Fosite OAuth 2.0 provider configuration.
@@ -123,6 +124,11 @@ func (c *OAuth2Config) GetClaimMappingStrategy(ctx context.Context) ClaimMapping
 // GetUserInfoStrategy returns the config's user info store strategy.
 func (c *OAuth2Config) GetUserInfoStrategy(ctx context.Context) UserInfoStrategy {
 	return c.UserInfoStrategy
+}
+
+// GetFositeConfig returns the upstream config type
+func (c *OAuth2Config) GetFositeConfig() *fosite.Config {
+	return c.Config
 }
 
 // MustViperFlags sets the flags needed for Fosite to work.
