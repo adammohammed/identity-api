@@ -2,6 +2,7 @@ package fositex
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/token/jwt"
@@ -88,6 +89,7 @@ type OAuth2Configurator interface {
 	SigningJWKSProvider
 	ClaimMappingStrategyProvider
 	UserInfoStrategyProvider
+	UserInfoAudienceProvider
 	GetFositeConfig() *fosite.Config
 }
 
@@ -131,10 +133,25 @@ func (c *OAuth2Config) GetFositeConfig() *fosite.Config {
 	return c.Config
 }
 
+func (c *OAuth2Config) GetUserInfoAudience(ctx context.Context) string {
+	issuer := c.GetAccessTokenIssuer(ctx)
+	aud, err := url.JoinPath(issuer, "userinfo")
+	if err != nil {
+		panic("creating user info audience failed, issuer must be malformed: " + issuer)
+	}
+	return aud
+}
+
 // MustViperFlags sets the flags needed for Fosite to work.
 func MustViperFlags(v *viper.Viper, flags *pflag.FlagSet, defaultListen string) {
 	flags.String("issuer", "", "oauth token issuer")
 	viperx.MustBindFlag(v, "oauth.issuer", flags.Lookup("issuer"))
 	flags.String("private-key", "", "private key file")
 	viperx.MustBindFlag(v, "oauth.privatekeyfile", flags.Lookup("issuer"))
+}
+
+// UserInfoEndpointProvider returns the user info audience to attach to tokens
+type UserInfoAudienceProvider interface {
+	// GetUserInfoAudience returns the audience for the identity-api issuer
+	GetUserInfoAudience(context.Context) string
 }

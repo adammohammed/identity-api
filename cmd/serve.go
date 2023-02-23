@@ -5,8 +5,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
+	fositeoauth2 "github.com/ory/fosite/handler/oauth2"
 	fositestorage "github.com/ory/fosite/storage"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.infratographer.com/x/ginx"
@@ -17,6 +20,7 @@ import (
 	"go.infratographer.com/identity-api/internal/config"
 	"go.infratographer.com/identity-api/internal/fositex"
 	"go.infratographer.com/identity-api/internal/jwks"
+	"go.infratographer.com/identity-api/internal/oauth2"
 	"go.infratographer.com/identity-api/internal/rfc8693"
 	"go.infratographer.com/identity-api/internal/routes"
 	"go.infratographer.com/identity-api/internal/storage"
@@ -76,12 +80,29 @@ func serve(ctx context.Context) {
 	jwtStrategy := compose.NewOAuth2JWTStrategy(keyGetter, hmacStrategy, oauth2Config)
 	store := fositestorage.NewExampleStore()
 
+	defaultStore := uberstore{
+		Storage:            store,
+		AccessTokenStorage: store,
+		Engine:             storageEngine,
+	}
+
+	clientId := "158074ee-6991-47cf-b357-972d4a5aed6f"
+	logger.Infow("added oauth client", "client_id", clientId, "client_secret", "foobar")
+	store.Clients[clientId] = &fosite.DefaultClient{
+		ID:            clientId,
+		Secret:        []byte(`$2a$10$IxMdI6d.LIRZPpSfEwNoeu4rY3FhDREsxFJXikcgdRRAStxUlsuEO`),
+		GrantTypes:    []string{"client_credentials"},
+		ResponseTypes: []string{},
+		Audience:      []string{"https://dmv.infratographer.com/userinfo"},
+		Public:        false,
+	}
+
 	provider := fositex.NewOAuth2Provider(
 		oauth2Config,
-		store,
+		defaultStore,
 		jwtStrategy,
 		rfc8693.NewTokenExchangeHandler,
-		compose.OAuth2ClientCredentialsGrantFactory,
+		oauth2.NewClientCredentialsHandlerFactory,
 	)
 
 	apiHandler, err := httpsrv.NewAPIHandler(storageEngine)
@@ -114,4 +135,10 @@ func serve(ctx context.Context) {
 	}
 
 	logger.Fatal(srv.ListenAndServe())
+}
+
+type uberstore struct {
+	fosite.Storage
+	fositeoauth2.AccessTokenStorage
+	storage.Engine
 }
