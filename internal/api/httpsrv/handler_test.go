@@ -53,7 +53,7 @@ func TestAPIHandler(t *testing.T) {
 		},
 	}
 
-	issSvc, err := storage.NewEngine(config)
+	store, err := storage.NewEngine(config)
 	if !assert.NoError(t, err) {
 		assert.FailNow(t, "initialization failed")
 	}
@@ -61,7 +61,7 @@ func TestAPIHandler(t *testing.T) {
 	t.Run("CreateIssuer", func(t *testing.T) {
 		t.Parallel()
 		handler := apiHandler{
-			engine: issSvc,
+			engine: store,
 		}
 
 		createOp := &v1.CreateIssuer{
@@ -72,7 +72,7 @@ func TestAPIHandler(t *testing.T) {
 		}
 
 		setupFn := func(ctx context.Context) context.Context {
-			ctx, err := issSvc.BeginContext(ctx)
+			ctx, err := store.BeginContext(ctx)
 			if !assert.NoError(t, err) {
 				assert.FailNow(t, "setup failed")
 			}
@@ -81,7 +81,7 @@ func TestAPIHandler(t *testing.T) {
 		}
 
 		cleanupFn := func(ctx context.Context) {
-			err := issSvc.RollbackContext(ctx)
+			err := store.RollbackContext(ctx)
 			assert.NoError(t, err)
 		}
 
@@ -162,7 +162,7 @@ func TestAPIHandler(t *testing.T) {
 		t.Parallel()
 
 		handler := apiHandler{
-			engine: issSvc,
+			engine: store,
 		}
 
 		testCases := []testingx.TestCase[GetIssuerByIDRequestObject, GetIssuerByIDResponseObject]{
@@ -223,7 +223,7 @@ func TestAPIHandler(t *testing.T) {
 		t.Parallel()
 
 		handler := apiHandler{
-			engine: issSvc,
+			engine: store,
 		}
 
 		issuerID := "53dcdc2a-94e7-44d1-97f5-ce7ad136b698"
@@ -241,12 +241,12 @@ func TestAPIHandler(t *testing.T) {
 		newName := "Better issuer"
 
 		setupFn := func(ctx context.Context) context.Context {
-			ctx, err := issSvc.BeginContext(ctx)
+			ctx, err := store.BeginContext(ctx)
 			if !assert.NoError(t, err) {
 				assert.FailNow(t, "setup failed")
 			}
 
-			_, err = issSvc.CreateIssuer(ctx, issuer)
+			_, err = store.CreateIssuer(ctx, issuer)
 			if err != nil {
 				assert.FailNow(t, "setup failed")
 			}
@@ -255,7 +255,7 @@ func TestAPIHandler(t *testing.T) {
 		}
 
 		cleanupFn := func(ctx context.Context) {
-			err := issSvc.RollbackContext(ctx)
+			err := store.RollbackContext(ctx)
 			assert.NoError(t, err)
 		}
 
@@ -327,7 +327,7 @@ func TestAPIHandler(t *testing.T) {
 		t.Parallel()
 
 		handler := apiHandler{
-			engine: issSvc,
+			engine: store,
 		}
 
 		issuerID := "c8d6458e-2524-4cf9-9e8d-a3f94b114b74"
@@ -343,12 +343,12 @@ func TestAPIHandler(t *testing.T) {
 		}
 
 		setupFn := func(ctx context.Context) context.Context {
-			ctx, err := issSvc.BeginContext(ctx)
+			ctx, err := store.BeginContext(ctx)
 			if !assert.NoError(t, err) {
 				assert.FailNow(t, "setup failed")
 			}
 
-			_, err = issSvc.CreateIssuer(ctx, issuer)
+			_, err = store.CreateIssuer(ctx, issuer)
 
 			if !assert.NoError(t, err) {
 				assert.FailNow(t, "error initializing issuer")
@@ -358,7 +358,7 @@ func TestAPIHandler(t *testing.T) {
 		}
 
 		cleanupFn := func(ctx context.Context) {
-			err := issSvc.RollbackContext(ctx)
+			err := store.RollbackContext(ctx)
 			assert.NoError(t, err)
 		}
 
@@ -387,8 +387,8 @@ func TestAPIHandler(t *testing.T) {
 
 					assert.Equal(t, expResp, obsResp)
 
-					_, err := issSvc.GetIssuerByID(ctx, issuerID)
-					assert.ErrorIs(t, err, types.ErrorIssuerNotFound)
+					_, err := store.GetIssuerByID(ctx, issuerID)
+					assert.ErrorIs(t, err, types.ErrIssuerNotFound)
 				},
 				CleanupFn: cleanupFn,
 			},
@@ -424,6 +424,117 @@ func TestAPIHandler(t *testing.T) {
 			resp, err := handler.DeleteIssuer(ctx, input)
 
 			result := testingx.TestResult[DeleteIssuerResponseObject]{
+				Success: resp,
+				Err:     err,
+			}
+
+			return result
+		}
+
+		testingx.RunTests(context.Background(), t, testCases, runFn)
+	})
+
+	t.Run("DeleteOAuthClient", func(t *testing.T) {
+		t.Parallel()
+
+		handler := apiHandler{
+			engine: store,
+		}
+
+		clientID := uuid.Nil.String()
+
+		client := types.OAuthClient{
+			TenantID: tenantID,
+			Name:     "Example",
+			Secret:   "abc1234",
+			Audience: []string{},
+			Scope:    "",
+		}
+
+		setupFn := func(ctx context.Context) context.Context {
+			ctx, err := store.BeginContext(ctx)
+			if !assert.NoError(t, err) {
+				assert.FailNow(t, "setup failed")
+			}
+
+			c, err := store.CreateOAuthClient(ctx, client)
+
+			if !assert.NoError(t, err) {
+				assert.FailNow(t, "error initializing issuer")
+			}
+
+			clientID = c.ID
+
+			return ctx
+		}
+
+		cleanupFn := func(ctx context.Context) {
+			err := store.RollbackContext(ctx)
+			assert.NoError(t, err)
+		}
+
+		testCases := []testingx.TestCase[DeleteOAuthClientRequestObject, DeleteOAuthClientResponseObject]{
+			{
+				Name: "Success",
+				Input: DeleteOAuthClientRequestObject{
+					ClientID: uuid.MustParse(clientID),
+				},
+				SetupFn: setupFn,
+				CheckFn: func(ctx context.Context, t *testing.T, result testingx.TestResult[DeleteOAuthClientResponseObject]) {
+					if !assert.NoError(t, result.Err) {
+						return
+					}
+
+					resp, ok := result.Success.(DeleteOAuthClient200JSONResponse)
+					if !ok {
+						assert.FailNow(t, "unexpected result type for delete issuer response")
+					}
+
+					obsResp := v1.DeleteResponse(resp)
+
+					expResp := v1.DeleteResponse{
+						Success: true,
+					}
+
+					assert.Equal(t, expResp, obsResp)
+
+					_, err := store.LookupOAuthClientByID(ctx, clientID)
+					assert.ErrorIs(t, err, types.ErrOAuthClientNotFound)
+				},
+				CleanupFn: cleanupFn,
+			},
+			{
+				Name: "NotFound",
+				Input: DeleteOAuthClientRequestObject{
+					ClientID: uuid.MustParse("00000000-0000-0000-0000-000000000000"),
+				},
+				SetupFn: setupFn,
+				CheckFn: func(ctx context.Context, t *testing.T, result testingx.TestResult[DeleteOAuthClientResponseObject]) {
+					if !assert.NoError(t, result.Err) {
+						return
+					}
+
+					resp, ok := result.Success.(DeleteOAuthClient200JSONResponse)
+					if !ok {
+						assert.FailNow(t, "unexpected result type for delete issuer response")
+					}
+
+					obsResp := v1.DeleteResponse(resp)
+
+					expResp := v1.DeleteResponse{
+						Success: true,
+					}
+
+					assert.Equal(t, expResp, obsResp)
+				},
+				CleanupFn: cleanupFn,
+			},
+		}
+
+		runFn := func(ctx context.Context, input DeleteOAuthClientRequestObject) testingx.TestResult[DeleteOAuthClientResponseObject] {
+			resp, err := handler.DeleteOAuthClient(ctx, input)
+
+			result := testingx.TestResult[DeleteOAuthClientResponseObject]{
 				Success: resp,
 				Err:     err,
 			}

@@ -188,3 +188,9 @@ type UserInfoService interface {
 	// and unpacks it into the UserInfo type.
 	FetchUserInfoFromIssuer(ctx context.Context, iss, rawToken string) (*UserInfo, error)
 }
+
+type OAuthClientStore interface {
+	CreateOAuthClient(ctx context.Context, client OAuthClient) (OAuthClient, error)
+	LookupOAuthClientByID(ctx context.Context, clientID string) (*OAuthClient, error)
+	DeleteOAuthClient(ctx context.Context, clientID string) error
+}
