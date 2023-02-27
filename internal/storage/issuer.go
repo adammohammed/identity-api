@@ -175,7 +175,7 @@ func (s *issuerService) DeleteIssuer(ctx context.Context, id string) error {
 	}
 
 	if rowsAffected == 0 {
-		return types.ErrorIssuerNotFound
+		return types.ErrIssuerNotFound
 	}
 
 	return nil
@@ -190,7 +190,7 @@ func (s *issuerService) scanIssuer(row *sql.Row) (*types.Issuer, error) {
 
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return nil, types.ErrorIssuerNotFound
+		return nil, types.ErrIssuerNotFound
 	case err != nil:
 		return nil, err
 	default:

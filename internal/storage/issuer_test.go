@@ -143,7 +143,7 @@ func TestIssuerService(t *testing.T) {
 				Name:  "NotFound",
 				Input: "https://evil.biz/",
 				CheckFn: func(ctx context.Context, t *testing.T, res testingx.TestResult[*types.Issuer]) {
-					assert.ErrorIs(t, types.ErrorIssuerNotFound, res.Err)
+					assert.ErrorIs(t, types.ErrIssuerNotFound, res.Err)
 				},
 			},
 			{
@@ -200,7 +200,7 @@ func TestIssuerService(t *testing.T) {
 				Name:  "NotFound",
 				Input: "00000000-0000-0000-0000-000000000000",
 				CheckFn: func(ctx context.Context, t *testing.T, res testingx.TestResult[*types.Issuer]) {
-					assert.ErrorIs(t, types.ErrorIssuerNotFound, res.Err)
+					assert.ErrorIs(t, types.ErrIssuerNotFound, res.Err)
 				},
 			},
 			{
@@ -366,7 +366,7 @@ func TestIssuerService(t *testing.T) {
 				CheckFn: func(ctx context.Context, t *testing.T, res testingx.TestResult[any]) {
 					if assert.NoError(t, res.Err) {
 						_, err := issSvc.GetIssuerByID(ctx, issuer.ID)
-						assert.ErrorIs(t, types.ErrorIssuerNotFound, err)
+						assert.ErrorIs(t, types.ErrIssuerNotFound, err)
 					}
 				},
 				CleanupFn: cleanupFn,
@@ -376,7 +376,7 @@ func TestIssuerService(t *testing.T) {
 				Input:   "00000000-0000-0000-0000-000000000000",
 				SetupFn: setupFn,
 				CheckFn: func(ctx context.Context, t *testing.T, res testingx.TestResult[any]) {
-					assert.ErrorIs(t, types.ErrorIssuerNotFound, res.Err)
+					assert.ErrorIs(t, types.ErrIssuerNotFound, res.Err)
 				},
 				CleanupFn: cleanupFn,
 			},

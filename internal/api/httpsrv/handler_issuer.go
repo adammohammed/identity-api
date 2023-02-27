@@ -58,7 +58,7 @@ func (h *apiHandler) GetIssuerByID(ctx context.Context, req GetIssuerByIDRequest
 	iss, err := h.engine.GetIssuerByID(ctx, id)
 	switch err {
 	case nil:
-	case types.ErrorIssuerNotFound:
+	case types.ErrIssuerNotFound:
 		return nil, errorNotFound
 	default:
 		return nil, err
@@ -103,7 +103,7 @@ func (h *apiHandler) UpdateIssuer(ctx context.Context, req UpdateIssuerRequestOb
 	issuer, err := h.engine.UpdateIssuer(ctx, id, update)
 	switch err {
 	case nil:
-	case types.ErrorIssuerNotFound:
+	case types.ErrIssuerNotFound:
 		return nil, errorNotFound
 	default:
 		return nil, err
@@ -122,7 +122,7 @@ func (h *apiHandler) DeleteIssuer(ctx context.Context, req DeleteIssuerRequestOb
 
 	err := h.engine.DeleteIssuer(ctx, id)
 	switch err {
-	case nil, types.ErrorIssuerNotFound:
+	case nil, types.ErrIssuerNotFound:
 	default:
 		return nil, err
 	}

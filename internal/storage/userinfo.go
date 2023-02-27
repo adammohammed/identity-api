@@ -175,7 +175,7 @@ func (s userInfoService) StoreUserInfo(ctx context.Context, userInfo types.UserI
 	switch err {
 	case nil:
 	case sql.ErrNoRows:
-		return nil, types.ErrorIssuerNotFound
+		return nil, types.ErrIssuerNotFound
 	default:
 		return nil, err
 	}

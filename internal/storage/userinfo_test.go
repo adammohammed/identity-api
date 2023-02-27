@@ -371,7 +371,7 @@ func TestUserInfoStore(t *testing.T) {
 				},
 				SetupFn: caseSetupFn,
 				CheckFn: func(ctx context.Context, t *testing.T, res testingx.TestResult[*types.UserInfo]) {
-					assert.ErrorIs(t, res.Err, types.ErrorIssuerNotFound)
+					assert.ErrorIs(t, res.Err, types.ErrIssuerNotFound)
 				},
 				CleanupFn: caseCleanupFn,
 			},
