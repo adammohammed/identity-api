@@ -184,4 +184,3 @@ components:
           description: CEL expressions mapping token claims to other claims
           additionalProperties:
             type: string
-

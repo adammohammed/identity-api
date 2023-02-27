@@ -10,6 +10,7 @@ import (
 type crdbEngine struct {
 	*issuerService
 	*userInfoService
+	*oauthClientStore
 	db *sql.DB
 }
 
@@ -29,10 +30,16 @@ func newCRDBEngine(config Config) (*crdbEngine, error) {
 		return nil, err
 	}
 
+	oauthClientStore, err := newOAuthClientStore(config, db)
+	if err != nil {
+		return nil, err
+	}
+
 	out := &crdbEngine{
-		issuerService:   issSvc,
-		userInfoService: userInfoSvc,
-		db:              db,
+		issuerService:    issSvc,
+		userInfoService:  userInfoSvc,
+		oauthClientStore: oauthClientStore,
+		db:               db,
 	}
 
 	return out, nil
