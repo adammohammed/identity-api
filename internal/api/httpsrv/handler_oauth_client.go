@@ -3,7 +3,6 @@ package httpsrv
 import "context"
 
 func (h *apiHandler) DeleteOAuthClient(ctx context.Context, request DeleteOAuthClientRequestObject) (DeleteOAuthClientResponseObject, error) {
-
 	err := h.engine.DeleteOAuthClient(ctx, request.ClientID.String())
 	if err != nil {
 		return nil, err
@@ -12,7 +11,16 @@ func (h *apiHandler) DeleteOAuthClient(ctx context.Context, request DeleteOAuthC
 }
 
 func (h *apiHandler) GetOAuthClient(ctx context.Context, request GetOAuthClientRequestObject) (GetOAuthClientResponseObject, error) {
-	return nil, nil
+	client, err := h.engine.LookupOAuthClientByID(ctx, request.ClientID.String())
+	if err != nil {
+		return nil, err
+	}
+
+	out, err := client.ToV1OAuthClient()
+	if err != nil {
+		return nil, err
+	}
+	return GetOAuthClient200JSONResponse(out), nil
 }
 
 func (h *apiHandler) CreateOAuthClient(ctx context.Context, reqeust CreateOAuthClientRequestObject) (CreateOAuthClientResponseObject, error) {
