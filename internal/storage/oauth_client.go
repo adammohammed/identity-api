@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ory/fosite"
 	"go.infratographer.com/identity-api/internal/types"
 )
 
@@ -37,17 +38,23 @@ var (
 )
 
 type oauthClientStore struct {
-	db *sql.DB
+	db     *sql.DB
+	hasher fosite.Hasher
 }
 
 func newOAuthClientStore(config Config, db *sql.DB) (*oauthClientStore, error) {
 	return &oauthClientStore{
 		db: db,
+		hasher: &fosite.BCrypt{
+			Config: &fosite.Config{
+				HashCost: fosite.DefaultBCryptWorkFactor,
+			},
+		},
 	}, nil
 }
 
 // CreateOAuthClient implements types.OAuthClientStore
-func (*oauthClientStore) CreateOAuthClient(ctx context.Context, client types.OAuthClient) (types.OAuthClient, error) {
+func (s *oauthClientStore) CreateOAuthClient(ctx context.Context, client types.OAuthClient) (types.OAuthClient, error) {
 	var emptyModel types.OAuthClient
 	tx, err := getContextTx(ctx)
 	if err != nil {
@@ -61,6 +68,13 @@ func (*oauthClientStore) CreateOAuthClient(ctx context.Context, client types.OAu
         ($1, $2, $3, $4, $5) RETURNING id;
        `
 	q = fmt.Sprintf(q, oauthClientColumnsStr)
+
+	hashedSecret, err := s.hasher.Hash(ctx, []byte(client.Secret))
+	if err != nil {
+		return emptyModel, err
+	}
+
+	client.Secret = string(hashedSecret)
 
 	row := tx.QueryRowContext(
 		ctx,
@@ -94,13 +108,11 @@ func (*oauthClientStore) DeleteOAuthClient(ctx context.Context, clientID string)
 
 // LookupOAuthClientByID implements types.OAuthClientStore
 func (s *oauthClientStore) LookupOAuthClientByID(ctx context.Context, clientID string) (*types.OAuthClient, error) {
-	tx, err := getContextTx(ctx)
-	if err != nil {
-		return nil, err
-	}
 	q := fmt.Sprintf(`SELECT %s FROM oauth_clients WHERE id = $1`, oauthClientColumnsStr)
 
 	var row *sql.Row
+
+	tx, err := getContextTx(ctx)
 
 	switch err {
 	case nil:
