@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ory/fosite"
 	"go.infratographer.com/identity-api/internal/types"
@@ -40,6 +41,21 @@ var (
 type oauthClientStore struct {
 	db     *sql.DB
 	hasher fosite.Hasher
+}
+
+// ClientAssertionJWTValid implements fosite.ClientManager
+func (*oauthClientStore) ClientAssertionJWTValid(ctx context.Context, jti string) error {
+	panic("unimplemented")
+}
+
+// GetClient implements fosite.ClientManager
+func (s *oauthClientStore) GetClient(ctx context.Context, id string) (fosite.Client, error) {
+	return s.LookupOAuthClientByID(ctx, id)
+}
+
+// SetClientAssertionJWT implements fosite.ClientManager
+func (*oauthClientStore) SetClientAssertionJWT(ctx context.Context, jti string, exp time.Time) error {
+	panic("unimplemented")
 }
 
 func newOAuthClientStore(config Config, db *sql.DB) (*oauthClientStore, error) {

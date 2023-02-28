@@ -6,6 +6,7 @@ import (
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/google/uuid"
+	"github.com/ory/fosite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -14,6 +15,7 @@ import (
 )
 
 var _ types.OAuthClientStore = &oauthClientStore{}
+var _ fosite.ClientManager = &oauthClientStore{}
 
 func TestOAuthClientStore(t *testing.T) {
 	t.Parallel()
@@ -138,6 +140,42 @@ func TestOAuthClientStore(t *testing.T) {
 	})
 
 	t.Run("CreateOAuthClient", func(t *testing.T) {
+		t.Parallel()
+
+		runFn := func(ctx context.Context, input types.OAuthClient) testingx.TestResult[types.OAuthClient] {
+			out, err := oauthClientStore.CreateOAuthClient(ctx, input)
+			return testingx.TestResult[types.OAuthClient]{
+				Success: out,
+				Err:     err,
+			}
+		}
+
+		secret := "superdupersecret"
+		testCases := []testingx.TestCase[types.OAuthClient, types.OAuthClient]{
+			{
+				Name: "Success",
+				Input: types.OAuthClient{
+					TenantID: tenantID,
+					Name:     "newclient",
+					Secret:   secret,
+					Audience: []string{"abc", "def", "ghi"},
+					Scope:    "openid profile email api",
+				},
+				SetupFn:   setupWithTx,
+				CleanupFn: cleanupWithTx,
+				CheckFn: func(ctx context.Context, t *testing.T, res testingx.TestResult[types.OAuthClient]) {
+					assert.NoError(t, res.Err)
+					client := res.Success
+					assert.NotEqual(t, secret, client.Secret)
+					assert.Equal(t, tenantID, client.TenantID)
+					assert.Equal(t, "newclient", client.Name)
+					assert.Equal(t, []string{"abc", "def", "ghi"}, client.Audience)
+					assert.Equal(t, "openid profile email api", client.Scope)
+				},
+			},
+		}
+
+		testingx.RunTests(context.Background(), t, testCases, runFn)
 
 	})
 
